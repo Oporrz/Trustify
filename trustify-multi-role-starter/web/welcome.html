@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Trustify • Welcome</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js"></script>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0b1020">
+</head>
+<body class="container bg-8401">
+  <div class="topbar">
+    <img src="./assets/logo_trustify.png" alt="Trustify" style="height:38px;opacity:.95">
+    <div class="points">Points <span class="bubble" data-points>0</span></div>
+  </div>
+
+  <div class="card hero">
+    <div class="chip">Welcome</div>
+    <h2>“Your trusted way to verify genuine products before you buy.”</h2>
+    <div class="note" style="margin:8px 0 18px">พร้อมใช้ได้ทั้งโหมด Guest และบัญชีผู้ใช้ (Customer / Brand / Gov)</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+      <a class="btn primary" href="./login.html">Create Account</a>
+      <a class="btn" style="border:2px solid rgba(255,255,255,.25)" href="./login.html#login">Log in</a>
+      <a class="btn good" href="./home_customer.html">Continue as Guest</a>
+    </div>
+  </div>
+
+  <!-- Floating Bear -->
+  <a class="bear-fab" href="./trustify-ai.html" aria-label="AI Assistant">
+    <img src="./assets/ไอโก้.png" alt="bear assistant">
+  </a>
+
+  <script>renderPoints();</script>
+</body>
+</html>

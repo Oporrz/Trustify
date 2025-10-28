@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Trustify | AI Dashboard</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js"></script>
+  <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0b1020">
+</head>
+<body class="container">
+
+<script>
+// ตรวจสิทธิ์เฉพาะ Brand หรือ Gov
+const role = localStorage.getItem('role');
+if (!['brand','gov'].includes(role)) {
+  alert('คุณไม่มีสิทธิ์เข้าหน้านี้');
+  location.replace('./login.html');
+}
+</script>
+
+<div class="topbar">
+  <div>🧠 AI Analysis Dashboard</div>
+  <div><a class="link" href="./login.html">Logout</a></div>
+</div>
+
+<h2>ภาพสินค้าที่ผ่านการวิเคราะห์โดย AI</h2>
+<div id="gallery" class="grid grid-2"></div>
+
+<script>
+const backend = localStorage.getItem('backend_url') || '';
+const API = (p,o={}) => fetch(backend + p, o);
+
+async function loadAnalyses(){
+  try {
+    const r = await API('/api/ai/all');
+    const items = r.ok ? await r.json() : [];
+    const g = document.getElementById('gallery');
+
+    if (!items.length){
+      g.innerHTML = '<div class="muted">ยังไม่มีข้อมูลการวิเคราะห์</div>';
+      return;
+    }
+
+    g.innerHTML = items.map(it => `
+      <div class="card" style="padding:12px">
+        <img src="${backend}${it.image_url}" style="max-width:100%;border-radius:8px"/>
+        <div><b>${it.label}</b> (${it.score}%)</div>
+        <div class="muted">GTIN: ${it.product_gtin || '-'}</div>
+        <div class="muted">วันที่: ${new Date(it.processed_at).toLocaleString()}</div>
+        <pre style="font-size:12px;white-space:pre-wrap;background:#00000033;padding:8px;border-radius:6px">${it.ocr_text || '(ไม่มี OCR)'}</pre>
+      </div>
+    `).join('');
+  } catch (err){
+    alert('โหลดข้อมูลไม่สำเร็จ');
+  }
+}
+loadAnalyses();
+</script>
+<a class="floating-assistant" href="./trustify-ai.html" title="Assistant">
+  <img src="./assets/ไอโก้.png" alt="Assistant">
+</a>
+</body>
+</html>

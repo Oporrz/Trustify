@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Trustify | Login</title>
+  <link rel="stylesheet" href="/style.css"><!-- optional -->
+  <script src="/app.js"></script>
+  <style>
+    :root{
+      --glass: rgba(0,0,0,.35);
+      --stroke: rgba(255,255,255,.12);
+    }
+    body{
+      margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto;
+      color:#fff; min-height:100svh;
+      background:url('/assets/bg_intro.jpg') center/cover fixed no-repeat, #0b1020;
+      display:flex; flex-direction:column;
+    }
+    .topbar{
+      display:flex; align-items:center; gap:12px; padding:14px 18px;
+      background:linear-gradient(180deg, rgba(0,0,0,.45), rgba(0,0,0,0));
+      border-bottom:1px solid var(--stroke);
+    }
+    .topbar .brand{display:flex; align-items:center; gap:10px}
+    .topbar img{height:26px; opacity:.95}
+    .spacer{flex:1}
+    .points{display:flex; align-items:center; gap:8px; font-weight:600}
+    .points .bubble{
+      min-width:24px; height:24px; border-radius:999px; display:inline-grid; place-items:center;
+      background:rgba(255,255,255,.12); border:1px solid var(--stroke); padding:0 6px;
+    }
+
+    .wrap{max-width:980px; margin:38px auto; padding:0 18px}
+    .grid{display:grid; grid-template-columns:1fr 1fr; gap:22px}
+    .card{
+      background:var(--glass); backdrop-filter: blur(10px);
+      border:1px solid var(--stroke); border-radius:18px; padding:18px;
+    }
+    .chip{display:inline-block; padding:6px 10px; border-radius:999px; font-size:12px;
+      background:rgba(255,255,255,.08); border:1px solid var(--stroke)}
+    h2,h3{margin:8px 0 10px}
+    .muted{opacity:.8}
+    .field{display:flex; flex-direction:column; gap:8px; margin:10px 0}
+    .input{
+      border-radius:12px; border:1px solid var(--stroke);
+      background:rgba(255,255,255,.06); padding:12px; color:#fff; outline:none;
+    }
+    .btn{
+      border:0; border-radius:12px; padding:12px 14px; cursor:pointer; font-weight:600;
+      background:#3358ff; color:#fff;
+    }
+    .btn.ghost{background:transparent; border:1px dashed var(--stroke)}
+    .helper{font-size:12px; opacity:.75}
+    @media (max-width: 860px){ .grid{grid-template-columns:1fr} }
+    /* Floating Bear */
+    .assistant-fab{
+      position:fixed; right:20px; bottom:20px; z-index:9999;
+      width:74px; height:74px; border-radius:50%; border:none; cursor:pointer;
+      box-shadow:0 14px 36px rgba(0,0,0,.35); background:#ff4d00;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .assistant-fab img{width:64px; height:64px; border-radius:50%}
+  </style>
+</head>
+<body>
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="brand">
+      <img src="/assets/logo_trustify_white.png" alt="Trustify"/>
+      <div class="muted">Access</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="points">😊 <span class="bubble" data-points>0</span></div>
+  </div>
+
+  <div class="wrap">
+    <!-- Hero -->
+    <div class="card" style="text-align:center">
+      <div class="chip">Trustify Access</div>
+      <h2>Sign in to continue</h2>
+      <div class="muted">Roles: Consumer, Brand, Government</div>
+    </div>
+
+    <!-- Forms -->
+    <div class="grid">
+      <!-- Login -->
+      <section class="card">
+        <h3>Login</h3>
+        <div class="field">
+          <label class="muted">Email</label>
+          <input id="email" class="input" type="email" placeholder="you@example.com">
+        </div>
+        <div class="field">
+          <label class="muted">Password</label>
+          <input id="password" class="input" type="password" placeholder="••••••••">
+        </div>
+        <div class="field">
+          <button class="btn" onclick="login()">Sign in</button>
+        </div>
+        <div class="helper">Forgot password? "contact us"</div> 
+        <div class="field" style="margin-top:14px">
+          <button class="btn ghost" onclick="guest()">Continue as guest (Consumer)</button>
+        </div>
+      </section>
+
+      <!-- Sign up -->
+      <section class="card">
+        <h3>Create account</h3>
+        <div class="field">
+          <label class="muted">Email</label>
+          <input id="s_email" class="input" type="email" placeholder="you@example.com">
+        </div>
+        <div class="field">
+          <label class="muted">Password</label>
+          <input id="s_password" class="input" type="password" placeholder="Set a password">
+        </div>
+        <div class="field">
+          <label class="muted">Role</label>
+          <select id="s_role" class="input">
+            <option value="customer">Consumer</option>
+            <option value="brand">Brand</option>
+            <option value="gov">Government</option>
+          </select>
+        </div>
+        <div class="field">
+          <button class="btn" onclick="signup()">Sign up</button>
+        </div>
+        <div class="helper"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Floating Assistant (Bear) -->
+  <button class="assistant-fab" onclick="location.href='/assistant.html'" aria-label="Assistant">
+    <img src="/assets/bear.png" alt="">
+  </button>
+
+  <script>
+    renderPoints();
+
+    // Auto-redirect if already logged in
+    (function autoRedirect(){
+      const role = localStorage.getItem('role');
+      if(!role) return;
+      if(role==='customer') location.replace('/home_customer.html');
+      else if(role==='brand') location.replace('/brand.html');
+      else if(role==='gov') location.replace('/gov.html');
+    })();
+
+    async function login(){
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+      if(!email || !password) return alert('Please fill email & password');
+
+      const r = await API('/api/login', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email, password })
+      });
+      const j = await r.json().catch(()=> ({}));
+      if(!r.ok){ alert(j.error || 'Invalid login'); return; }
+
+      localStorage.setItem('email', email);
+      localStorage.setItem('role', j.role);
+      if(j.role==='customer') location.href='/home_customer.html';
+      else if(j.role==='brand') location.href='/brand.html';
+      else if(j.role==='gov') location.href='/gov.html';
+      else location.href='/home_customer.html';
+    }
+
+    async function signup(){
+      const email = document.getElementById('s_email').value.trim();
+      const password = document.getElementById('s_password').value.trim();
+      const role = document.getElementById('s_role').value.trim();
+      if(!email || !password || !role) return alert('Please complete all fields');
+
+      const r = await API('/api/signup', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email, password, role })
+      });
+      const j = await r.json().catch(()=> ({}));
+      if(!r.ok){ alert(j.error || 'Sign up failed'); return; }
+
+      alert('Account created! You can sign in now.');
+      document.getElementById('email').value = email;
+      document.getElementById('password').value = password;
+    }
+
+    async function guest(){
+      try{
+        const r = await API('/api/guest');
+        const j = await r.json();
+        if(j.ok){
+          localStorage.setItem('role','customer');
+          localStorage.setItem('guest_mode','true');
+          location.href='/home_customer.html';
+        }else{
+          // fallback local
+          localStorage.setItem('role','customer');
+          localStorage.setItem('guest_mode','true');
+          location.href='/home_customer.html';
+        }
+      }catch{
+        localStorage.setItem('role','customer');
+        localStorage.setItem('guest_mode','true');
+        location.href='/home_customer.html';
+      }
+    }
+  </script>
+</body>
+</html>

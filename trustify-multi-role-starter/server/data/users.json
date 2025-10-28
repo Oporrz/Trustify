@@ -1,0 +1,26 @@
+[
+  {
+    "id": "UserDemo",
+    "email": "66080027@kmitl.ac.th",
+    "password": "11111111",
+    "role": "customer"
+  },
+  {
+    "id": "Kaesad Brand Admin Demo",
+    "email": "66080156@kmitl.ac.th",
+    "password": "23452345",
+    "role": "brand"
+  },
+  {
+    "id": "ASY Pharma Brand Admin Demo",
+    "email": "66080144@kmitl.ac.th",
+    "password": "75648903",
+    "role": "brand"
+  },
+  {
+    "id": "Gov Officer Demo",
+    "email": "66080094@kmitl.ac.th",
+    "password": "4582047",
+    "role": "gov"
+  }
+]

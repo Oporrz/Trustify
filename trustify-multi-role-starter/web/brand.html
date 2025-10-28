@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Trustify • Brand</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js"></script>
+  <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0b1020">
+</head>
+<body class="container bg-8410">
+  <div class="topbar">
+    <a class="link" href="./welcome.html">← Trustify</a>
+    <div class="points">Points <span class="bubble" data-points>0</span></div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>เพิ่มสินค้า</h3>
+      <div class="field"><input id="p_gtin" class="input" placeholder="GTIN"></div>
+      <div class="field"><input id="p_name" class="input" placeholder="Product name"></div>
+      <div class="field"><input id="p_brand" class="input" placeholder="Brand"></div>
+      <div class="field"><input id="p_batch" class="input" placeholder="Batch (ถ้ามี)"></div>
+      <button class="btn primary" onclick="addProduct()">Add Product</button>
+    </div>
+
+    <div class="card">
+      <h3>อัปโหลดรูปสินค้า</h3>
+      <div class="field"><input id="g_gtin" class="input" placeholder="GTIN (ต้องตรงสินค้า)"></div>
+      <div class="field"><input id="g_angle" class="input" placeholder="Angle เช่น front/back/logo/qr"></div>
+      <div class="field"><input id="g_files" type="file" multiple accept="image/*" class="input"></div>
+      <button class="btn" onclick="uploadImages()">Upload</button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3>สรุป</h3>
+    <pre id="sum" style="white-space:pre-wrap"></pre>
+  </div>
+
+  <!-- Floating Bear -->
+  <a class="bear-fab" href="./trustify-ai.html" aria-label="AI Assistant">
+    <img src="./assets/ไอโก้.png" alt="bear assistant">
+  </a>
+
+  <script>
+    renderPoints();
+    const backend = localStorage.getItem('backend_url') || 'http://localhost:8787';
+    const API = (p,o={}) => fetch(backend+p,o);
+
+    async function addProduct(){
+      const body = {
+        gtin:  document.getElementById('p_gtin').value.trim(),
+        name:  document.getElementById('p_name').value.trim(),
+        brand: document.getElementById('p_brand').value.trim(),
+        batch: document.getElementById('p_batch').value.trim()
+      };
+      if(!body.gtin || !body.name) return alert('ต้องกรอก GTIN และชื่อสินค้า');
+      const r = await API('/api/products/add',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+      const j = await r.json().catch(()=>({}));
+      alert(r.ok? 'เพิ่มสินค้าเรียบร้อย' : (j.error||'ผิดพลาด'));
+      loadSummary();
+    }
+
+    async function uploadImages(){
+      const gtin  = document.getElementById('g_gtin').value.trim();
+      const angle = document.getElementById('g_angle').value.trim() || 'front';
+      const files = document.getElementById('g_files').files;
+      if(!gtin || !files.length) return alert('GTIN + รูป');
+
+      const fd = new FormData(); [...files].forEach(f=>fd.append('files',f)); fd.append('angle', angle);
+      const r = await API(`/api/products/${encodeURIComponent(gtin)}/images`,{ method:'POST', body:fd });
+      const j = await r.json().catch(()=>({}));
+      alert(r.ok? `อัปโหลด ${j.count} ไฟล์สำเร็จ` : (j.error||'อัปโหลดไม่สำเร็จ'));
+      loadSummary();
+    }
+
+    async function loadSummary(){
+      try{
+        const r = await API('/api/summary/brand'); const j = await r.json();
+        document.getElementById('sum').textContent = JSON.stringify(j,null,2);
+      }catch{ document.getElementById('sum').textContent = '—'; }
+    }
+    loadSummary();
+  </script>
+  <a class="floating-assistant" href="./trustify-ai.html" title="Assistant">
+  <img src="./assets/ไอโก้.png" alt="Assistant">
+</a>
+</body>
+</html>

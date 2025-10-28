@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Trustify | Points & Rewards</title>
+  <link rel="stylesheet" href="./style.css">
+  <style>
+    .catalog{display:grid;gap:12px}
+    @media(min-width:520px){.catalog{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    .voucher{font-family:monospace;font-size:14px;padding:6px 10px;border:1px dashed #ffffff55;border-radius:8px;background:#0f1320}
+    .muted{color:#9aa4b2}
+  </style>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0b1020">
+
+</head>
+<body>
+  <div class="container" style="max-width:720px">
+    <div class="topbar">
+      <a class="link" href="./home_customer.html">← Home</a>
+      <div class="points">Points <a class="bubble" href="./points.html" data-points>0</a></div>
+    </div>
+
+    <h2>My Points</h2>
+
+    <div class="card">
+      <div>ยอดพอยต์ปัจจุบัน: <b id="balance">0</b> pts</div>
+      <div class="muted">ได้พอยต์จากการรายงานสินค้าปลอม: +1 ต่อ 1 รายงาน</div>
+    </div>
+
+    <h3 style="margin-top:16px">ของรางวัล (แลกพอยต์)</h3>
+    <div id="catalog" class="catalog"></div>
+
+    <h3 style="margin-top:16px">ประวัติพอยต์ / รายงาน</h3>
+    <div id="earned" class="list"></div>
+
+    <h3 style="margin-top:16px">คูปองที่แลกแล้ว</h3>
+    <div id="vouchers" class="list"></div>
+  </div>
+
+  <script src="./app.js"></script>
+  <script>
+    renderPoints();
+
+    const CATALOG = [
+      { id:'gift-20', name:'บัตรกำนัล 20 บาท', cost: 5 },
+      { id:'gift-50', name:'บัตรกำนัล 50 บาท', cost: 12 },
+      { id:'gift-100', name:'บัตรกำนัล 100 บาท', cost: 22 },
+      { id:'gift-sticker', name:'สติ๊กเกอร์ Trustify', cost: 3 },
+    ];
+
+    const balanceEl = document.getElementById('balance');
+    const catEl = document.getElementById('catalog');
+    const earnedEl = document.getElementById('earned');
+    const vouchersEl = document.getElementById('vouchers');
+
+    function refresh(){
+      balanceEl.textContent = state.points;
+      renderCatalog();
+      renderEarned();
+      renderVouchers();
+    }
+
+    function renderCatalog(){
+      catEl.innerHTML = '';
+      CATALOG.forEach(it => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+            <div>
+              <div><b>${it.name}</b></div>
+              <div class="muted">${it.cost} pts</div>
+            </div>
+            <button class="btn" ${state.points < it.cost ? 'disabled' : ''} data-id="${it.id}">Redeem</button>
+          </div>`;
+        card.querySelector('button').onclick = () => redeem(it);
+        catEl.appendChild(card);
+      });
+    }
+
+    function renderEarned(){
+      const reports = trustifyStore.getReports();
+      earnedEl.innerHTML = '';
+      if(!reports.length){ earnedEl.innerHTML = '<div class="card muted">ยังไม่มีประวัติการได้พอยต์</div>'; return; }
+      reports.forEach(r => {
+        const d = new Date(r.ts).toLocaleString();
+        const el = document.createElement('div');
+        el.className = 'card';
+        el.innerHTML = `<div style="display:flex;justify-content:space-between">
+          <div><b>Report counterfeit</b> <span class="muted">(${r.brand||'-'}/${r.code||r.lot||'-'})</span><div class="muted">${d}</div></div>
+          <div class="chip">+1 pt</div>
+        </div>`;
+        earnedEl.appendChild(el);
+      });
+    }
+
+    function renderVouchers(){
+      const v = trustifyStore.getRedemptions();
+      vouchersEl.innerHTML = '';
+      if(!v.length){ vouchersEl.innerHTML = '<div class="card muted">ยังไม่มีคูปอง</div>'; return; }
+      v.forEach(x => {
+        const el = document.createElement('div');
+        el.className = 'card';
+        el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
+          <div><b>${x.name}</b><div class="muted">${new Date(x.ts).toLocaleString()}</div></div>
+          <div class="voucher">${x.code}</div>
+        </div>`;
+        vouchersEl.appendChild(el);
+      });
+    }
+
+    function redeem(item){
+      if(state.points < item.cost) return;
+      // หักพอยต์
+      state.points -= item.cost;
+      localStorage.setItem('points', state.points);
+      renderPoints();
+
+      // สร้างโค้ดคูปอง
+      const code = 'TFY-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+      const voucher = { id:item.id, name:item.name, code, ts: Date.now(), cost:item.cost };
+      trustifyStore.addRedemption(voucher);
+
+      alert(`แลกสำเร็จ!\nคูปอง: ${code}`);
+      refresh();
+    }
+
+    refresh();
+  </script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!doctype html><html lang="th"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Report</title><link rel="stylesheet" href="./style.css"><script src="./app.js"></script>
+</head><body class="container">
+<div class="topbar"><a class="link" href="./home_customer.html">← Home</a><div class="points">Points <span class="bubble" data-points>0</span></div></div>
+<h2>Report suspicious</h2>
+<div class="card">
+  <div class="field"><label class="muted">Brand</label><input id="brand" class="input"></div>
+  <div class="field"><label class="muted">Lot</label><input id="lot" class="input"></div>
+  <div class="field"><label class="muted">Code (GTIN/QR/Batch)</label><input id="code" class="input"></div>
+  <div class="field"><label class="muted">Note</label><textarea id="note" class="input" rows="4"></textarea></div>
+  <button class="btn primary" onclick="submitReport()">ส่งรายงาน</button>
+</div>
+<script>
+renderPoints();
+async function submitReport(){
+  const brand=document.getElementById('brand').value.trim();
+  const lot=document.getElementById('lot').value.trim();
+  const code=document.getElementById('code').value.trim();
+  const note=document.getElementById('note').value.trim();
+  if(!code) return alert('กรอก Code อย่างน้อย 1 ช่อง');
+  const geo = await getGeo();
+  const r = await API('/api/reports',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ brand, lot, code, note, lat:geo?.lat, lng:geo?.lng })});
+  if(r.ok){ addPoint(1); alert('ส่งรายงานแล้ว (+1 พอยต์)'); location.href='./home_customer.html'; }
+  else alert('ส่งไม่สำเร็จ');
+}
+</script>
+</body></html>

@@ -1,0 +1,60 @@
+/* ---- Trustify dark theme helpers (add-on) ---- */
+:root{
+  --bg-deep: #16181d;
+  --card: rgba(255,255,255,.04);
+  --muted: #b7c1d6;
+  --primary: #365fd2;      /* blue button */
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --bad: #ef4444;
+}
+
+.bg-deep{
+  min-height:100vh;
+  background:#0f1115 url("./assets/IMG_8401.png") no-repeat top left / cover fixed;
+  color:#fff;
+}
+
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;padding:10px 12px;
+}
+
+.icon-btn{display:inline-flex;align-items:center;justify-content:center;
+  width:36px;height:36px;border:1px solid rgba(255,255,255,.2);border-radius:10px;color:#fff}
+.icon-arrow-left::before{content:"←"}
+
+.pill{display:flex;align-items:center;gap:8px;background:#ff6a2b;
+  color:#fff;border-radius:20px;padding:6px 10px;font-weight:800}
+.icon-coin::before{content:"🟠"}
+
+.container .card{background:var(--card);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:14px}
+.card-pad{padding:16px}
+.grid{display:grid;gap:14px}
+.grid-2{grid-template-columns:1fr 1fr}
+.row{display:flex;align-items:center}
+.row-gap{gap:12px}
+.full{width:100%}
+
+.btn{border:0;border-radius:14px;padding:12px 16px;cursor:pointer;background:#fff;color:#0b1020;font-weight:800}
+.btn:hover{opacity:.96}
+.btn.primary{background:var(--primary);color:#fff}
+.btn.outline{background:transparent;border:2px solid #e7ebf3;color:#fff}
+.circle-ghost{width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.18);font-size:38px;margin:4px auto}
+
+.muted{color:var(--muted)}
+
+.result-card{
+  margin-top:12px;display:flex;align-items:center;justify-content:space-between;
+  border:2px solid rgba(255,255,255,.18);border-radius:16px;padding:10px 14px
+}
+.result-card .score{font-size:28px;font-weight:900}
+
+/* floating bear helper */
+.bear-fab{
+  position:fixed;right:16px;bottom:16px;width:68px;height:68px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:#ff4b00;border:3px solid #111;box-shadow:0 14px 30px rgba(0,0,0,.42);z-index:50
+}
+.bear-fab img{width:100%;height:100%;object-fit:cover;border-radius:50%}

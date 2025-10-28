@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Trustify • Intro</title>
+  <link rel="stylesheet" href="./style.css">
+  <style>
+    body{min-height:100vh;display:grid;place-items:center;background:url('./IMG_8410.png') center/cover fixed;}
+    .logo{width:160px;opacity:.92}
+    .fade{animation:fade 1.2s ease forwards}
+    @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  </style>
+  <script>
+    // ไปหน้า login ภายใน 1.2 วิ
+    window.addEventListener('DOMContentLoaded',()=>{ setTimeout(()=>location.replace('./login.html'),1200); });
+  </script>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0b1020">
+
+</head>
+<body>
+  <img class="logo fade" src="./logo_trustify.png" alt="Trustify">
+</body>
+</html>

@@ -1,0 +1,18 @@
+<script>
+const role = localStorage.getItem('user_role');
+if (role !== 'brand') {
+  alert('คุณไม่มีสิทธิ์เข้าหน้านี้');
+  window.location.href = '/login.html';
+}
+</script>
+<!doctype html><html lang="th"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Trustify | Brand</title><link rel="stylesheet" href="./style.css"></head><body><div class="container"><div class="topbar"><div class="brand"><img src="./assets/logo_trustify.png"><strong>Trustify</strong></div><div class="points">Points <span class="bubble" data-points>0</span></div></div>
+<h2>Brand Console</h2><div class="grid grid-2"><div class="card"><h3>Add Product</h3>
+<div class="field"><input class="input" placeholder="Brand name"></div><div class="field"><input class="input" placeholder="Product name"></div>
+<div class="field"><input class="input" placeholder="Lot"></div><div class="field"><input class="input" placeholder="GTIN / Barcode"></div>
+<div class="field"><input class="input" type="date"></div><button class="btn">Save</button></div>
+<div class="card"><h3>Dashboard</h3><div class="grid grid-2"><div class="card center"><div class="chip">Scans</div><div style="font-size:28px;font-weight:900">12</div></div>
+<div class="card center"><div class="chip">Authentic</div><div style="font-size:28px;font-weight:900">87%</div></div></div>
+<a class="btn ghost" href="./dashboard_brand.html">Open full dashboard</a></div></div></div><a class="floating-assistant" href="./trustify-ai.html" title="Assistant">
+  <img src="./assets/ไอโก้.png" alt="Assistant">
+</a></body></html>

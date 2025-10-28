@@ -1,0 +1,20 @@
+[
+  {
+    "gtin": "8850001111111",
+    "name": "Keasad Drinking Water",
+    "lotnumber": "KS1234A",
+    "MFG": "10/3/2025",
+    "EXP": "10/3/2026",
+    "brand": "Keasad",
+    "batch": "C3"
+  },
+  {
+    "gtin": "8850002222222",
+    "name": "Acetaminophen 500 mg",
+    "lotnumber": "ASY9876B",
+    "MFG": "10/5/2025",
+    "EXP": "10/5/2026",
+    "brand": "ASY Pharma",
+    "batch": "C2"
+  }
+]

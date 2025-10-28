@@ -1,0 +1,52 @@
+[
+  {
+    "gtin": "8850000000012",
+    "batch": "B2409A",
+    "qrid": "T-001",
+    "expiry": "2026-03-31",
+    "status": "genuine",
+    "trust_score": 97,
+    "brand": "ACME",
+    "name": "Bottled Water 500ml"
+  },
+  {
+    "gtin": "8850000000036",
+    "batch": "B2409X",
+    "qrid": "T-003",
+    "expiry": "2025-11-15",
+    "status": "near_expiry",
+    "trust_score": 72,
+    "brand": "ACME",
+    "name": "Snack Bar 45g"
+  },
+  {
+    "gtin": "8850000000043",
+    "batch": "B2405Z",
+    "qrid": "T-004",
+    "expiry": "2025-08-01",
+    "status": "expired",
+    "trust_score": 12,
+    "brand": "Foo",
+    "name": "Vitamin C 1000mg"
+  },
+  {
+    "gtin": "8850000000050",
+    "batch": "C2501A",
+    "qrid": "T-005",
+    "expiry": "2027-01-20",
+    "status": "suspect",
+    "trust_score": 55,
+    "brand": "Bar",
+    "name": "Collagen Drink"
+  },
+  {
+    "gtin": "8850000000067",
+    "batch": "C2501B",
+    "qrid": "T-006",
+    "expiry": "2026-09-09",
+    "status": "counterfeit",
+    "trust_score": 8,
+    "brand": "Bar",
+    "name": "Cosmetic Serum 30ml"
+  }
+]

@@ -1,0 +1,17 @@
+<!doctype html><html lang="th"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>History</title><link rel="stylesheet" href="./style.css"><script src="./app.js"></script>
+</head><body class="container">
+<div class="topbar"><a class="link" href="./home_customer.html">← Home</a><div class="points">Points <span class="bubble" data-points>0</span></div></div>
+<h2>History (local device)</h2>
+<div id="box" class="grid grid-2"></div>
+<script>
+renderPoints();
+// สำหรับเดโม เก็บประวัติใน localStorage ฝั่งหน้า scan (เราไม่ได้อัดไว้ — ถ้าต้องใส่เพิ่มค่อย patch)
+const arr = JSON.parse(localStorage.getItem('history')||'[]');
+const box = document.getElementById('box');
+if(!arr.length){ box.innerHTML='<div class="muted">ยังไม่มีประวัติในเครื่องนี้</div>'; }
+else { box.innerHTML = arr.map(x=>`<div class="card"><div><b>${x.code}</b> • ${x.label} (${x.confidence}%)</div><div class="muted">${new Date(x.ts).toLocaleString()}</div></div>`).join(''); }
+</script>
+</a>
+</body></html>

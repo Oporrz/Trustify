@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Gov Dashboard — Hotspot</title>
+  <link rel="stylesheet" href="./style.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0b1020">
+
+
+  <!-- Leaflet + MarkerCluster CDN -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+  <style>
+    #map { height: 52vh; border-radius: 16px; overflow: hidden; }
+    .legend { background:#0f1320; color:#fff; padding:8px 10px; border-radius:12px; border:1px solid #ffffff22; }
+    .legend div { display:flex; align-items:center; gap:8px; }
+    .dot { width:10px; height:10px; border-radius:999px; display:inline-block }
+    .table { width:100%; border-collapse: collapse; }
+    .table th, .table td { padding:10px; border-bottom:1px solid #ffffff22; text-align:left; }
+    .table th { color:#cfe1ff; font-weight:800; }
+    .status { padding:4px 8px; border-radius:999px; border:1px solid #ffffff33; font-size:12px }
+    .s-open { background:#7c2d12; color:#fdba74; }
+    .s-done { background:#134e4a; color:#99f6e4; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <a class="link" href="./home_gov.html">← Back</a>
+      <div class="points">Forwarded <span class="bubble" id="fwdCount">0</span></div>
+    </div>
+
+    <h2>Hotspot / Redzone</h2>
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        <div class="legend">
+          <div><span class="dot" style="background:#ef4444"></span> Counterfeit (จากการสแกน)</div>
+          <div><span class="dot" style="background:#f59e0b"></span> Reported (จากผู้บริโภค)</div>
+        </div>
+        <div class="muted">แสดงเฉพาะข้อมูลที่มีพิกัด (ผู้ใช้กดยินยอมตำแหน่ง)</div>
+      </div>
+    </div>
+
+    <div id="map" class="card"></div>
+
+    <!-- สรุปล่างแผนที่ (รายการล่าสุด) -->
+    <div id="list" class="grid" style="margin-top:12px"></div>
+
+    <!-- ===== Forwarded Queue ===== -->
+    <h2 style="margin-top:18px">Forwarded to Agency</h2>
+    <div class="card">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <select id="fFilter" class="input" style="max-width:220px">
+          <option value="all">ทั้งหมด</option>
+          <option value="product">จาก High-risk (สินค้า)</option>
+          <option value="report">จาก Customer Report</option>
+          <option value="open">สถานะ: Open</option>
+          <option value="done">สถานะ: Done</option>
+        </select>
+        <input id="fQuery" class="input" placeholder="ค้นหา brand / GTIN / lot / note" style="flex:1;min-width:180px">
+        <button class="btn ghost" id="fExport">Export JSON</button>
+        <button class="btn ghost" id="fClear">Clear ทั้งหมด</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="table" id="fTable">
+          <thead>
+            <tr>
+              <th style="min-width:120px">ประเภท</th>
+              <th style="min-width:160px">Brand / ชื่อ</th>
+              <th style="min-width:120px">GTIN / Code</th>
+              <th style="min-width:120px">Lot</th>
+              <th style="min-width:120px">เมื่อ</th>
+              <th style="min-width:100px">สถานะ</th>
+              <th style="min-width:160px">การทำงาน</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="fEmpty" class="muted" style="margin-top:8px;display:none">ยังไม่มีการส่งต่อหน่วยงาน</div>
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script>
+    // -------- Hotspot Map (เดิม) --------
+    document.getElementById('fwdCount').textContent = (trustifyStore.getForwarded().length || 0).toString();
+
+    const history = readHistory().filter(h => h.label === 'counterfeit' && h.lat && h.lng);
+    const reports = trustifyStore.getReports().filter(r => r.lat && r.lng);
+
+    const map = L.map('map');
+    const center = history[0] || reports[0] || { lat: 13.7563, lng: 100.5018 };
+    map.setView([center.lat, center.lng], 12);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    const redCluster = L.markerClusterGroup({ disableClusteringAtZoom: 16 });
+    const yelCluster = L.markerClusterGroup({ disableClusteringAtZoom: 16 });
+
+    history.forEach(h => {
+      const m = L.circleMarker([h.lat, h.lng], { radius:8, color:'#ef4444', fillColor:'#ef4444', fillOpacity:0.9 });
+      const name = (h.item && (h.item.name || h.item.gtin)) || h.code;
+      m.bindPopup(`<b>Counterfeit</b><br>${name}<br/>${new Date(h.ts).toLocaleString()}`);
+      redCluster.addLayer(m);
+    });
+
+    reports.forEach(r => {
+      const m = L.circleMarker([r.lat, r.lng], { radius:8, color:'#f59e0b', fillColor:'#f59e0b', fillOpacity:0.9 });
+      m.bindPopup(`<b>Reported</b><br>${r.brand || '-'} / ${r.code || r.lot || '-'}<br/>${new Date(r.ts).toLocaleString()}`);
+      yelCluster.addLayer(m);
+    });
+
+    map.addLayer(redCluster);
+    map.addLayer(yelCluster);
+
+    if (history.length + reports.length > 0) {
+      const group = new L.featureGroup([
+        ...history.map(h => L.marker([h.lat, h.lng])),
+        ...reports.map(r => L.marker([r.lat, r.lng]))
+      ]);
+      map.fitBounds(group.getBounds().pad(0.2));
+    }
+
+    const list = document.getElementById('list');
+    function card(html){ const el=document.createElement('div'); el.className='card'; el.innerHTML=html; return el; }
+    history.slice(0, 8).forEach(h => list.appendChild(card(`<b>Counterfeit</b> — ${(h.item && h.item.name) || h.code}<div class="muted">${new Date(h.ts).toLocaleString()}</div>`)));
+    reports.slice(0, 8).forEach(r => list.appendChild(card(`<b>Reported</b> — ${r.brand || '-'} / ${r.code || r.lot || '-'}<div class="muted">${new Date(r.ts).toLocaleString()}</div>`)));
+
+    // -------- Forwarded Queue (ใหม่) --------
+    const tableBody = document.querySelector('#fTable tbody');
+    const emptyMsg  = document.getElementById('fEmpty');
+    const qInput    = document.getElementById('fQuery');
+    const filterSel = document.getElementById('fFilter');
+    const btnExport = document.getElementById('fExport');
+    const btnClear  = document.getElementById('fClear');
+
+    function loadForwarded(){ 
+      // โครง: {type:'product'|'report', brand, name, gtin, code, lot, ts, status?}
+      return JSON.parse(localStorage.getItem('forwarded') || '[]');
+    }
+    function saveForwarded(rows){
+      localStorage.setItem('forwarded', JSON.stringify(rows));
+      document.getElementById('fwdCount').textContent = rows.length.toString();
+    }
+
+    function renderForwarded(){
+      const rows = loadForwarded();
+      const keyword = (qInput.value || '').toLowerCase();
+      const filter  = filterSel.value;
+
+      let data = rows.map(x => ({
+        ...x,
+        // ปกติ highrisk ฝั่ง product จะไม่มี code → map เป็น gtin
+        code: x.code || x.gtin || '',
+        brand: x.brand || '',
+        lot: x.lot || '',
+        name: x.name || '',
+        status: x.status || 'open'
+      }));
+
+      if (filter === 'product') data = data.filter(x => x.type === 'product');
+      if (filter === 'report')  data = data.filter(x => x.type === 'report');
+      if (filter === 'open')    data = data.filter(x => (x.status || 'open') === 'open');
+      if (filter === 'done')    data = data.filter(x => x.status === 'done');
+
+      if (keyword) {
+        data = data.filter(x => JSON.stringify(x).toLowerCase().includes(keyword));
+      }
+
+      tableBody.innerHTML = '';
+      emptyMsg.style.display = data.length ? 'none' : 'block';
+
+      data.forEach((x, idx) => {
+        const tr = document.createElement('tr');
+
+        const tdType = `<td>${x.type === 'product' ? 'High-risk (สินค้า)' : 'Customer report'}</td>`;
+        const tdBrand= `<td><b>${x.brand || x.name || '-'}</b></td>`;
+        const tdCode = `<td>${x.code || '-'}</td>`;
+        const tdLot  = `<td>${x.lot || '-'}</td>`;
+        const tdWhen = `<td>${new Date(x.ts || Date.now()).toLocaleString()}</td>`;
+        const tdStat = `<td><span class="status ${x.status==='done' ? 's-done' : 's-open'}">${x.status==='done'?'Done':'Open'}</span></td>`;
+        const tdAct  = `<td>
+            <button class="btn" data-done>Mark Done</button>
+            <button class="btn ghost" data-remove>Remove</button>
+          </td>`;
+
+        tr.innerHTML = tdType + tdBrand + tdCode + tdLot + tdWhen + tdStat + tdAct;
+        // actions
+        tr.querySelector('[data-done]').onclick = () => {
+          const all = loadForwarded();
+          const i = all.findIndex(a => a.ts === x.ts);
+          if (i >= 0) { all[i].status = 'done'; saveForwarded(all); renderForwarded(); }
+        };
+        tr.querySelector('[data-remove]').onclick = () => {
+          const all = loadForwarded().filter(a => a.ts !== x.ts);
+          saveForwarded(all); renderForwarded();
+        };
+
+        tableBody.appendChild(tr);
+      });
+    }
+
+    qInput.addEventListener('input', renderForwarded);
+    filterSel.addEventListener('change', renderForwarded);
+    btnExport.onclick = () => {
+      const blob = new Blob([ JSON.stringify(loadForwarded(), null, 2) ], { type:'application/json' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = 'trustify_forwarded.json'; a.click();
+      URL.revokeObjectURL(url);
+    };
+    btnClear.onclick = () => {
+      if (!confirm('ล้าง Forwarded ทั้งหมด?')) return;
+      saveForwarded([]); renderForwarded();
+    };
+
+    renderForwarded();
+  </script>
+</body>
+</html>

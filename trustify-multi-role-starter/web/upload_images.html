@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="th">
+    
+    <script>
+  (() => {
+    if (!localStorage.getItem('backend_url')) {
+      localStorage.setItem('backend_url', `http://${location.hostname}:8787`);
+    }
+  })();
+</script>
+
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Upload images</title>
+  <link rel="stylesheet" href="./style.css">
+  <script>
+  // ตั้ง backend_url อัตโนมัติ ถ้ายังไม่เคยตั้ง
+  (() => {
+    if (!localStorage.getItem('backend_url')) {
+      localStorage.setItem('backend_url', `http://${location.hostname}:8787`);
+      console.log('[Trustify] backend_url set to', localStorage.getItem('backend_url'));
+    }
+  })();
+  </script>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0b1020">
+
+</head>
+<body class="container">
+  <h2>อัปโหลดรูป / สินค้าหนึ่งชิ้นหลายมุม</h2>
+
+  <div class="card">
+    <label class="muted">GTIN</label>
+    <input id="gtin" class="input" value="8850001111111" placeholder="เช่น 885...">
+
+    <div class="field">
+      <label class="muted">เลือกภาพ (หลายไฟล์ได้)</label>
+      <input id="files" type="file" multiple accept="image/*">
+    </div>
+
+    <div class="field">
+      <label class="muted">Angle (เช่น front/back/logo/qr)</label>
+      <input id="angle" class="input" placeholder="front">
+    </div>
+
+    <button id="btnUpload" class="btn">อัปโหลด</button>
+  </div>
+
+  <h3>แกลเลอรี</h3>
+  <div id="gallery" class="grid grid-3"></div>
+
+  <script>
+  const backend = localStorage.getItem('backend_url') || '';
+  const API = (p, o={}) => fetch(backend + p, o);
+
+  async function loadImages(gtin) {
+    try {
+      const r = await API(`/api/products/${encodeURIComponent(gtin)}/images`);
+      const items = r.ok ? await r.json() : [];
+      const g = document.getElementById('gallery');
+      g.innerHTML = items.map(it => `
+        <div class="card" style="text-align:center">
+          <img src="${backend}${it.image_url}" style="max-width:100%;border-radius:8px"/>
+          <div class="muted">angle: ${it.angle || '-'}</div>
+          <div class="muted">uploaded: ${new Date(it.uploaded_at).toLocaleString()}</div>
+        </div>
+      `).join('');
+    } catch(e) {
+      alert('โหลดรูปไม่สำเร็จ: '+e.message);
+    }
+  }
+
+  document.getElementById('btnUpload').onclick = async () => {
+    const gtin = document.getElementById('gtin').value.trim();
+    const files = document.getElementById('files').files;
+    const angle = document.getElementById('angle').value.trim() || 'front';
+    if (!gtin || !files.length) return alert('กรอก GTIN และเลือกรูปอย่างน้อย 1 ไฟล์');
+
+    const fd = new FormData();
+    for (const f of files) fd.append('files', f); // ต้องชื่อ files
+    fd.append('angle', angle);
+
+    try {
+      const r = await API(`/api/products/${encodeURIComponent(gtin)}/images`, { method:'POST', body: fd });
+      const j = await r.json().catch(()=> ({}));
+      if (r.ok && j.ok) {
+        alert(`อัปโหลดสำเร็จ: ${j.count} ไฟล์`);
+        loadImages(gtin);
+      } else {
+        alert('อัปโหลดไม่สำเร็จ: ' + (j.error || r.status));
+      }
+    } catch(e) {
+      alert('เชื่อมต่อไม่สำเร็จ: ' + e.message);
+    }
+  };
+
+  // preload gallery
+  document.getElementById('gtin').addEventListener('change', e => loadImages(e.target.value.trim()));
+  loadImages(document.getElementById('gtin').value.trim());
+  </script>
+</body>
+</html>

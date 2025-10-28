@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>High Risk Items | Trustify</title>
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(135deg, #0b132b 0%, #1c2541 50%, #3a506b 100%);
+      color: #fff;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    header {
+      text-align: center;
+      padding: 30px 0;
+    }
+    h1 {
+      font-weight: 600;
+      color: #ff9f43;
+    }
+    #list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 800px;
+      margin: 0 auto 100px;
+      padding: 0 15px;
+    }
+    .risk-card {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 14px 16px;
+      backdrop-filter: blur(8px);
+      transition: 0.3s;
+    }
+    .risk-card:hover {
+      background: rgba(255,255,255,0.12);
+    }
+    .meta strong { color: #ffd166; }
+    .btn {
+      background: #ff9f43;
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      padding: 6px 12px;
+      margin-top: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: 0.3s;
+    }
+    .btn:hover {
+      background: #ffa94d;
+    }
+    #toast {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 9999;
+      display: none;
+      background: #111;
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0,0,0,.25);
+    }
+    .floating-assistant {
+      position: fixed;
+      bottom: 25px;
+      right: 25px;
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: #ff7f50;
+      box-shadow: 0 0 20px rgba(255,127,80,0.4);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: transform 0.2s;
+    }
+    .floating-assistant img {
+      width: 50px;
+      height: 50px;
+    }
+    .floating-assistant:hover {
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>⚠️ รายการสินค้าที่มีความเสี่ยงสูง</h1>
+    <p style="opacity:.8">รายการสินค้าที่ระบบ AI ตรวจพบว่ามีความเสี่ยงต่อการปลอม</p>
+  </header>
+
+  <main>
+    <div id="list"></div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <!-- Floating bear (ไปหน้า Support) -->
+  <a href="assistance.html" class="floating-assistant" title="Assistant">
+    <img src="./assets/ไอโก้.png" alt="Assistant">
+  </a>
+
+  <!-- Core JS -->
+  <script src="app.js"></script>
+  <script type="module">
+    import { trustifyStore } from './trustifyStore.js';
+
+    async function render() {
+      const list = document.getElementById('list');
+      list.innerHTML = '<p>⏳ กำลังโหลดข้อมูล...</p>';
+      try {
+        const res = await API('/api/highrisk');
+        const data = await res.json();
+        list.innerHTML = '';
+
+        if (!data.length) {
+          list.innerHTML = '<p style="text-align:center;">ไม่มีรายการสินค้าความเสี่ยงสูง</p>';
+          return;
+        }
+
+        data.forEach((p) => {
+          const when = new Date(p.ts || Date.now()).toLocaleString();
+          const el = document.createElement('div');
+          el.className = 'risk-card';
+          el.innerHTML = `
+            <div class="meta">
+              <strong>${p.brand || '-'}</strong> — ${p.name || '-'}<br>
+              GTIN: ${p.gtin || '-'} / Batch: ${p.batch || '-'}<br>
+              <small>${when}</small>
+            </div>
+            <button class="btn" data-forward>ส่งต่อให้หน่วยงาน</button>
+          `;
+
+          // setup forward action
+          const fwd = el.querySelector('[data-forward]');
+          if (fwd) {
+            fwd.onclick = () => {
+              trustifyStore.addForwarded({
+                type: 'product',
+                gtin: p.gtin,
+                batch: p.batch,
+                brand: p.brand,
+                name: p.name,
+                from: 'highrisk',
+              });
+              toast('✅ ส่งต่อหมายงานเรียบร้อย');
+            };
+          }
+
+          list.appendChild(el);
+        });
+      } catch (e) {
+        list.innerHTML = `<p style="color:#f66;">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>`;
+        console.error(e);
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>

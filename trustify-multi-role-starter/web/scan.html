@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Trustify | Scan</title>
+<link rel="stylesheet" href="./style.css">
+<script src="./app.js"></script>
+<!-- libraries -->
+<script src="https://unpkg.com/html5-qrcode" defer></script>
+<script src="https://unpkg.com/quagga@0.12.1/dist/quagga.min.js" defer></script>
+<script src="./trustify-ai.js" defer></script>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0b1020">
+</head>
+<body class="container" style="background-image:url('./assets/bg/IMG_8410.png');background-size:cover;background-position:center">
+  <div class="topbar">
+    <a class="icon-link" href="./home_customer.html" aria-label="Back">↩</a>
+    <img src="./assets/logo_trustify.png" alt="Trustify" style="height:28px;opacity:.9">
+    <div class="points">
+      <span class="bubble" id="pointsBadge">🙂 <span data-points>0</span></span>
+    </div>
+  </div>
+
+  <main style="max-width:980px;margin:34px auto 140px">
+    <div class="card glass" style="padding:20px 24px">
+
+      <!-- Camera area -->
+       <div id="live-ocr-wrap"></div>
+       <!-- ที่ scan.html -->
+<div id="live-ocr-wrap"></div>
+<script>
+  renderPoints();
+  // ผูก UI Live OCR
+  attachLiveOCRUI();
+</script>
+      
+      <div class="card soft" style="border:1px dashed rgba(255,255,255,.25);padding:22px">
+        <div id="reader" style="overflow:hidden;border-radius:12px"></div>
+        <div class="muted" id="camHint" style="margin-top:8px;text-align:center">
+          Camera is blocked — use <b>Barcode</b> / <b>Add picture</b>.
+        </div>
+        <div style="display:flex;justify-content:center;margin-top:12px">
+          <button class="btn primary" id="btnScan">Scan</button>
+        </div>
+      </div>
+
+      <!-- Barcode & Add picture -->
+      <div class="grid grid-2" style="--gap:18px;margin-top:22px">
+        <div class="card soft" style="min-height:240px;border:1px dashed rgba(255,255,255,.2)">
+          <div id="barcodeStage" style="height:140px;border-radius:12px;background:#111;display:grid;place-items:center">
+            <div style="font-size:64px">🏷️</div>
+          </div>
+          <div style="text-align:center;margin-top:10px">
+            <button class="btn ghost" id="btnBarcode">Scan Barcode</button>
+          </div>
+        </div>
+
+        <div class="card soft" style="min-height:240px;border:1px dashed rgba(255,255,255,.2);background-image:url('./assets/bg/IMG_8404.png');background-size:cover;background-position:center">
+          <div style="display:grid;place-items:center;height:140px">
+            <div style="font-size:60px">🖼️</div>
+          </div>
+          <div style="text-align:center">
+            <label class="btn ghost" for="filePick">Add picture</label>
+            <input type="file" id="filePick" accept="image/*" style="display:none">
+          </div>
+        </div>
+      </div>
+
+      <!-- Code + result -->
+      <div class="card soft" style="margin-top:22px">
+        <div class="field">
+          <label class="muted">GTIN / QR / Batch</label>
+          <input id="manual" class="input" placeholder="Paste a code or fill automat" />
+        </div>
+
+        <div id="result" class="card" style="margin-top:14px;min-height:78px;display:flex;align-items:center;justify-content:space-between">
+          <div class="muted" id="resultText">Awaiting scan</div>
+          <div id="resultScore" class="chip">—</div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:14px">
+          <button class="btn" id="btnVerify">Verify</button>
+          <button class="btn ghost" id="btnPDF">Download report (PDF)</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Floating Bear only bottom-right -->
+  <a class="floating-assistant" href="./trustify-ai.html" title="Assistant">
+    <img src="./assets/ไอโก้.png" alt="Assistant">
+  </a>
+
+  <style>
+    .icon-link{color:#e8e8e8;text-decoration:none;font-size:22px}
+    .card.glass{backdrop-filter: blur(10px); background: rgba(15,18,22,.45); border:1px solid rgba(255,255,255,.08); border-radius:18px}
+    .card.soft{border-radius:18px;padding:16px;background:rgba(0,0,0,.25)}
+    .floating-assistant{position:fixed;right:22px;bottom:22px;z-index:30;display:block;width:76px;height:76px;border-radius:50%;overflow:hidden;box-shadow:0 8px 28px rgba(0,0,0,.35);background:#ff4d00}
+    .floating-assistant img{width:100%;height:100%;object-fit:cover}
+  </style>
+
+  <script>
+    renderPoints();
+
+    const BACKEND = CFG.BACKEND_URL;
+    const colorFor = (label)=> label==='counterfeit'? '#ef4444' : (label==='suspect'? '#f59e0b' : '#22c55e');
+
+    // ---- QR / Camera
+    let html5;
+    async function startQR(){
+      try{
+        html5 = new Html5Qrcode('reader');
+        await html5.start(
+          { facingMode:'environment' },
+          { fps:10, qrbox:{ width:260, height:260 } },
+          decoded => { document.getElementById('manual').value = decoded; renderResultByCode(decoded); },
+          _ => {}
+        );
+        document.getElementById('camHint').textContent = 'Point to the code…';
+      }catch(_){
+        document.getElementById('reader').innerHTML = '<div class="card" style="text-align:center">Camera unavailable</div>';
+      }
+    }
+    document.getElementById('btnScan').addEventListener('click',startQR);
+
+    // ---- BARCODE (Quagga)
+    const barcodeStage = document.getElementById('barcodeStage');
+    let quaggaOn = false;
+    document.getElementById('btnBarcode').addEventListener('click',()=>{
+      if(quaggaOn){ Quagga.stop(); quaggaOn=false; barcodeStage.innerHTML='<div style="font-size:64px">🏷️</div>'; return; }
+      Quagga.init({
+        inputStream: { name:'Live', type:'LiveStream', target: barcodeStage, constraints:{ facingMode:'environment' } },
+        decoder: { readers: ['ean_reader','ean_8_reader','code_128_reader','upc_reader','upc_e_reader'] }
+      }, (err)=>{
+        if(err){ alert('Barcode not supported on this device'); return; }
+        Quagga.start(); quaggaOn = true;
+      });
+      Quagga.onDetected(data=>{
+        if(!data || !data.codeResult) return;
+        const code = data.codeResult.code || '';
+        if(code){
+          Quagga.stop(); quaggaOn=false;
+          barcodeStage.innerHTML = '<div class="chip">Detected: '+code+'</div>';
+          document.getElementById('manual').value = code;
+          renderResultByCode(code);
+        }
+      });
+    });
+
+    // ---- Add picture → OCR + AI
+    document.getElementById('filePick').addEventListener('change', async e => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const ocr = await runOCR(f);      // from trustify-ai.js
+      const text = (ocr.text || '').trim();
+      // Auto-extract GTIN/batch from OCR to manual input (helper in trustify-ai.js)
+      const picked = guessCodesFromText(text); // {gtin?, batch?}
+      if(picked.gtin){ document.getElementById('manual').value = picked.gtin; }
+      renderResultByCode(document.getElementById('manual').value, text);
+    });
+
+    // ---- API helpers
+    async function fetchProduct(code){
+      const res = await API(`/api/products?code=${encodeURIComponent(code)}`);
+      if(!res.ok) throw new Error('API error');
+      return res.json();
+    }
+    async function saveScan({ code, label, confidence, ocr_text }){
+      const geo = await getGeo();
+      await API('/api/scans',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ code, label, confidence, ocr_text, lat: geo?.lat, lng: geo?.lng })
+      });
+      addPoint(1);
+    }
+
+    // ---- render result
+    async function renderResultByCode(code, ocrText=""){
+      const box = document.getElementById('result');
+      const lbl = document.getElementById('resultText');
+      const sc  = document.getElementById('resultScore');
+      lbl.textContent = 'Checking…'; sc.textContent='…';
+
+      const item = await fetchProduct(code);
+      if(!item){ lbl.textContent = `Code ${code} : Not found`; sc.textContent='—'; return; }
+
+      // images count (local JSON ok)
+      const imgs = await API(`/api/products/${encodeURIComponent(item.gtin)}/images`).then(r=>r.json());
+      item.images_count = imgs.length;
+
+      // predict (client heuristic)
+      const pred = aiPredict(item, ocrText);                      // {label, confidence, reasons[]}
+      lbl.innerHTML = `
+        <b>${item.name||'-'}</b> <span class="muted">(${item.brand||'-'})</span>
+        <br>Images in DB: <b>${item.images_count}</b> • Status: <b>${item.status||'-'}</b>
+        <div class="muted" style="margin-top:6px">${pred.reasons.join(' • ')}</div>`;
+      sc.textContent = `${pred.confidence}% ${pred.label}`;
+      sc.style.background = colorFor(pred.label);
+
+      await saveScan({ code, label: pred.label, confidence: pred.confidence, ocr_text: ocrText });
+    }
+
+    // Verify button (use current manual value)
+    document.getElementById('btnVerify').addEventListener('click', ()=>{
+      const code = document.getElementById('manual').value.trim();
+      if(!code) return alert('Enter a code first');
+      renderResultByCode(code);
+    });
+
+    // PDF report
+    document.getElementById('btnPDF').addEventListener('click', ()=> downloadScanPDF({
+      code: document.getElementById('manual').value.trim(),
+      resultEl: document.getElementById('result')
+    })); // implemented in trustify-ai.js
+
+  </script>
+</body>
+</html>

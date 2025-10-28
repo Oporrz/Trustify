@@ -1,0 +1,20 @@
+{
+  "name": "trustify",
+  "version": "1.0.0",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": { "node": "20.x" },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.2",
+    "mssql": "^10.0.1",
+    "multer": "^1.4.5-lts.1",
+    "sharp": "^0.33.2",
+    "tesseract.js": "^5.0.1",
+    "web-push": "^3.6.7"
+  }
+}

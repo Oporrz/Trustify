@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Trustify Help Center</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/assets/base.css">
+  <style>
+    body{margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto; color:#fff;
+      background:url('/assets/bg_intro.jpg') center/cover fixed no-repeat, #0b1020;}
+    .wrap{max-width:980px;margin:48px auto;padding:0 20px}
+    header{display:flex;align-items:center;gap:12px}
+    header img.logo{height:28px;opacity:.9}
+    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:24px;margin-top:24px}
+    .card{background:rgba(0,0,0,.35);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);
+      border-radius:16px;padding:16px}
+    .search{display:flex;gap:8px}
+    .search input{flex:1;border-radius:12px;border:1px solid rgba(255,255,255,.18);
+      background:rgba(255,255,255,.06);padding:14px 12px;color:#fff;outline:none}
+    .search button{border:0;border-radius:12px;padding:14px 16px;background:#3358ff;color:#fff;cursor:pointer}
+    .badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+    .badge{padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);cursor:pointer}
+    .chat{display:flex;flex-direction:column;gap:8px;height:520px}
+    .chatlog{flex:1;overflow:auto;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.25);padding:12px}
+    .msg{max-width:80%;margin:6px 0;padding:10px 12px;border-radius:12px;line-height:1.35}
+    .bot{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}
+    .me{background:#3358ff}
+    .composer{display:flex;gap:8px}
+    .composer input{flex:1;border-radius:12px;border:1px solid rgba(255,255,255,.18);
+      background:rgba(255,255,255,.06);padding:12px;color:#fff}
+    .composer button{border:0;border-radius:12px;padding:12px 14px;background:#10b981;color:#0b1020;cursor:pointer}
+    .link{color:#9ecbff;text-decoration:underline;cursor:pointer}
+  </style>
+  <script src="/app.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <img src="/assets/logo_trustify_white.png" class="logo" alt="Trustify"/>
+      <h2 style="margin:0">Help Center</h2>
+      <div style="margin-left:auto"><a class="link" href="/home_customer.html">← Back to app</a></div>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <h3 style="margin-top:0">How can we help?</h3>
+        <div class="search">
+          <input id="q" placeholder="Search: scan, OCR, points, account…"/>
+          <button id="btnSearch">Search</button>
+        </div>
+        <div class="badges" id="quick">
+          <div class="badge" data-k="scan">Scan & OCR</div>
+          <div class="badge" data-k="barcode">Barcode / QR</div>
+          <div class="badge" data-k="points">Points & rewards</div>
+          <div class="badge" data-k="account">Account / sign in</div>
+          <div class="badge" data-k="privacy">Privacy & data</div>
+        </div>
+        <div id="results" style="margin-top:14px"></div>
+      </section>
+
+      <aside class="card">
+        <h3 style="margin-top:0">Assistant</h3>
+        <div class="chat">
+          <div id="chatlog" class="chatlog"></div>
+          <div class="composer">
+            <input id="msg" placeholder="Ask anything (TH/EN)"/>
+            <button id="send">Send</button>
+          </div>
+          <div style="font-size:12px;opacity:.7">Tip: type <code>contact human</code> to open a ticket.</div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    // --- Search over FAQs ---
+    async function doSearch(k){
+      const res = await fetch('/api/assist/search?q='+encodeURIComponent(k||document.getElementById('q').value||''));
+      const js  = await res.json();
+      const box = document.getElementById('results');
+      if (!js?.hits?.length){ box.innerHTML='<div style="opacity:.7">No results.</div>'; return; }
+      box.innerHTML = js.hits.map(h=>`
+        <div class="card" style="padding:12px;margin-top:8px">
+          <div style="font-weight:700">${h.q}</div>
+          <div style="opacity:.9;margin-top:6px">${h.a}</div>
+        </div>`).join('');
+    }
+    document.getElementById('btnSearch').onclick = ()=>doSearch();
+    document.getElementById('q').addEventListener('keydown',e=>{ if(e.key==='Enter') doSearch(); });
+    document.getElementById('quick').onclick = (e)=>{ if(e.target.dataset.k){ doSearch(e.target.dataset.k); } };
+
+    // --- Chat assistant ---
+    const log = document.getElementById('chatlog');
+    function push(role, text){
+      const div = document.createElement('div');
+      div.className = 'msg '+(role==='me'?'me':'bot');
+      div.textContent = text;
+      log.appendChild(div); log.scrollTop = log.scrollHeight;
+    }
+    push('bot','Hi! I can help with scanning, OCR/barcodes, points, and account issues. (TH/EN)');
+
+    async function send(){
+      const i = document.getElementById('msg');
+      const t = (i.value||'').trim(); if(!t) return;
+      push('me', t); i.value='';
+      const role = localStorage.getItem('role') || 'Consumer';
+      const res = await fetch('/api/assist/ask', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ text:t, role, email: localStorage.getItem('email')||'' })
+      });
+      const js = await res.json();
+      push('bot', js.answer || '…');
+      if(js.ticketId){
+        push('bot', `I opened a ticket for you: #${js.ticketId}. We'll get back to you soon.`);
+      }
+    }
+    document.getElementById('send').onclick = send;
+    document.getElementById('msg').addEventListener('keydown',e=>{ if(e.key==='Enter') send(); });
+  </script>
+</body>
+</html>
